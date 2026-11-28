@@ -234,6 +234,12 @@ export const EXPORT_EXCLUSIONS: ReadonlyArray<{
       "Одноразовий стан входу через Сільпо з кодом перевірки: секрет на кілька хвилин, не дані про тебе.",
   },
   {
+    group: "silpoPantryLearning",
+    tables: ["silpo_pantry_skip_counts"],
+    reason:
+      "Лічильник знятих галочок в аркуші чека Сільпо: підказка, які продукти ти зазвичай не додаєш у комору, а не твої записи. Самі чеки їдуть у секції silpo.",
+  },
+  {
     group: "serviceQueues",
     tables: [
       "mono_ai_enrichment_queue",

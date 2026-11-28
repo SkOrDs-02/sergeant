@@ -142,7 +142,9 @@ export type SilpoPantryClaimResponse = z.infer<
  * знімається без відхилення чека.
  */
 export const SilpoPantryReleaseRequestSchema = z.object({
-  itemIds: z.array(z.number().int().positive()).min(1).max(200),
+  // Порожній масив з `decline: true` - «Вже не актуальний» / «Не додавати»
+  // (спека silpo-pantry-confirm.md): чек відхиляється цілим.
+  itemIds: z.array(z.number().int().positive()).max(200),
   decline: z.boolean(),
 });
 export type SilpoPantryReleaseRequest = z.infer<
@@ -154,6 +156,39 @@ export const SilpoPantryReleaseResponseSchema = z.object({
 });
 export type SilpoPantryReleaseResponse = z.infer<
   typeof SilpoPantryReleaseResponseSchema
+>;
+
+/**
+ * `GET /api/silpo/pantry-skips` - родові назви продуктів, з яких людина
+ * тричі поспіль зняла галочку в аркуші чека (спека silpo-pantry-confirm.md
+ * § «Навчання "зазвичай не додаєш"»). Такий рядок пропонується без галочки.
+ */
+export const SilpoPantrySkipsResponseSchema = z.object({
+  productKeys: z.array(z.string()),
+});
+export type SilpoPantrySkipsResponse = z.infer<
+  typeof SilpoPantrySkipsResponseSchema
+>;
+
+/**
+ * Body of `POST /api/silpo/pantry-skips` - результат одного «Додати»:
+ * `skipped` - продукти, з яких людина зняла галочку, що стояла за
+ * замовчуванням (+1); `added` - додані продукти (лічильник знову 0).
+ */
+const PantryProductKeySchema = z.string().min(1).max(200);
+export const SilpoPantrySkipsRecordRequestSchema = z.object({
+  skipped: z.array(PantryProductKeySchema).max(200),
+  added: z.array(PantryProductKeySchema).max(200),
+});
+export type SilpoPantrySkipsRecordRequest = z.infer<
+  typeof SilpoPantrySkipsRecordRequestSchema
+>;
+
+export const SilpoPantrySkipsRecordResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type SilpoPantrySkipsRecordResponse = z.infer<
+  typeof SilpoPantrySkipsRecordResponseSchema
 >;
 
 /**

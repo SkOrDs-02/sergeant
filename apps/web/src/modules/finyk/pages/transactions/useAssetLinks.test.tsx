@@ -53,7 +53,11 @@ const fund: ManualAsset = {
   events: [],
 };
 
-function setup(activeTx: Transaction[], initial = [deposit, fund]) {
+function setup(
+  activeTx: Transaction[],
+  initial = [deposit, fund],
+  transferTxIds: ReadonlySet<string> = new Set(),
+) {
   const overrideCategory = vi.fn();
   const hook = renderHook(() => {
     const [assets, setAssets] = useState<ManualAsset[]>(initial);
@@ -62,6 +66,7 @@ function setup(activeTx: Transaction[], initial = [deposit, fund]) {
       activeTx,
       hiddenTxIds: [],
       excludedTxIds: new Set(),
+      transferTxIds,
       manualAssets: assets,
       setManualAssets: setAssets,
       overrideCategory,
@@ -140,8 +145,8 @@ describe("useAssetLinks", () => {
     );
     const suggestions = hook.result.current.links.suggestions;
     expect(
-      suggestions.map((s) => [s.tx.id, s.asset.id, s.amountMinor]),
-    ).toEqual([["t2", "fund", 300_000]]);
+      suggestions.map((s) => [s.tx.id, s.type, s.assets.map((a) => a.id)]),
+    ).toEqual([["t2", "contribution", ["fund"]]]);
 
     act(() => hook.result.current.links.reject(suggestions[0]!));
     expect(hook.result.current.links.suggestions).toEqual([]);
@@ -176,5 +181,130 @@ describe("useAssetLinks", () => {
     act(() => markStorageReady());
     hook.rerender();
     expect(hook.result.current.links.suggestions).toHaveLength(1);
+  });
+
+  describe("інвестиційні сигнали (спека finyk-investment-suggestions)", () => {
+    const ovdpEur: ManualAsset = {
+      id: "ovdp",
+      name: "ОВДП EUR",
+      amount: 0,
+      currency: "EUR",
+      kind: "ovdp",
+      status: "active",
+      events: [],
+      fxRate: { uahPerUnit: 50, asOf: "2026-03-01" },
+    };
+    // EUR-картка, перерахована за курсом НБУ: `amount` у гривнях.
+    const bondBuy: Transaction = {
+      ...tx("b1", -10_292_533, "Купівля облігацій"),
+      mcc: 4829,
+      accountCurrencyCode: 978,
+      accountAmount: -203_884,
+      amountUah: -10_292_533,
+      fxRate: { uahPerUnit: 50.4823, date: "2026-03-05" },
+    };
+
+    it("купівля облігацій з активом ОВДП: внесок у валюті рахунку", () => {
+      const { hook } = setup([bondBuy], [deposit, ovdpEur]);
+      const [s] = hook.result.current.links.suggestions;
+      expect([s?.type, s?.kind, s?.assets.map((a) => a.id)]).toEqual([
+        "contribution",
+        "ovdp",
+        ["ovdp"],
+      ]);
+      act(() => hook.result.current.links.accept(s!));
+      expect(eventsOf(hook.result.current.assets, "ovdp")).toEqual([
+        expect.objectContaining({
+          type: "contribution",
+          txId: "b1",
+          amountMinor: 203_884,
+        }),
+      ]);
+      expect(hook.result.current.links.suggestions).toEqual([]);
+    });
+
+    it("без активу ОВДП: створений з операції актив привʼязує її першим внеском", () => {
+      const { hook } = setup([bondBuy], [deposit]);
+      const [s] = hook.result.current.links.suggestions;
+      expect([s?.assets.length, s?.kind]).toEqual([0, "ovdp"]);
+      const created: ManualAsset = {
+        ...ovdpEur,
+        id: "new",
+        events: [
+          {
+            id: "e1",
+            type: "contribution",
+            date: "2026-03-05",
+            amountMinor: 203_884,
+            count: 2,
+          },
+        ],
+      };
+      act(() => hook.result.current.links.createFrom(s!, created));
+      expect(eventsOf(hook.result.current.assets, "new")).toEqual([
+        expect.objectContaining({
+          type: "contribution",
+          txId: "b1",
+          merchantKey: "купівля облігацій",
+        }),
+      ]);
+      expect(hook.result.current.links.suggestions).toEqual([]);
+    });
+
+    it("відкриття депозиту пропонує депозит", () => {
+      const { hook } = setup([tx("d1", -22_923_100, "Відкриття депозиту")]);
+      const [s] = hook.result.current.links.suggestions;
+      expect([s?.type, s?.kind, s?.assets.map((a) => a.id)]).toEqual([
+        "contribution",
+        "deposit",
+        ["dep"],
+      ]);
+    });
+
+    it("процент від облігацій: дохід лише за наявного активу ОВДП", () => {
+      const coupon = tx("c1", 157_638, "Процент від облігацій");
+      expect(setup([coupon]).hook.result.current.links.suggestions).toEqual([]);
+      const { hook, overrideCategory } = setup([coupon], [ovdpEur]);
+      const [s] = hook.result.current.links.suggestions;
+      expect(s?.type).toBe("income");
+      act(() => hook.result.current.links.accept(s!));
+      expect(overrideCategory).toHaveBeenLastCalledWith("c1", "in_assets");
+    });
+
+    it("надходження від того, кому вносили, пропонується як повернення", () => {
+      const paid: ManualAsset = {
+        ...fund,
+        events: [
+          {
+            id: "e",
+            type: "contribution",
+            date: "2026-02-01",
+            amountMinor: 9_936_500,
+            txId: "old",
+            merchantKey: "тов інжур кепітал",
+          },
+        ],
+      };
+      const back = tx("w1", 5_000_000, 'ТОВ "ІНЖУР КЕПІТАЛ"');
+      const { hook } = setup([back], [paid]);
+      const [s] = hook.result.current.links.suggestions;
+      expect([s?.type, s?.assets.map((a) => a.id)]).toEqual([
+        "withdrawal",
+        ["fund"],
+      ]);
+    });
+
+    it("погашення кредиту й нога пари переказу карток не отримують", () => {
+      const { hook } = setup(
+        [
+          tx("k1", -500_000, "Повне погашення"),
+          tx("k2", -80_000, "Погашення наступного платежу"),
+          tx("d2", -100_000, "Відкриття депозиту"),
+        ],
+        [deposit],
+        new Set(["d2"]),
+      );
+      expect(hook.result.current.links.suggestions).toEqual([]);
+    });
   });
 });

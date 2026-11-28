@@ -125,6 +125,15 @@ export const silpoKeys = {
     ] as const,
   receiptDetail: (receiptId: string) =>
     ["silpo", "receipts", "detail", receiptId] as const,
+  /**
+   * Нові чеки, що пропонуються для комори (картка в огляді Харчування,
+   * спека silpo-pantry-confirm.md). Під префіксом `receipts`, тож
+   * інвалідація чеків після бронювання чи відхилення оновлює й картку.
+   */
+  pantryOffers: (since: string | null) =>
+    ["silpo", "receipts", "pantry-offers", since] as const,
+  /** `GET /api/silpo/pantry-skips` - продукти, які людина зазвичай не додає. */
+  pantrySkips: ["silpo", "pantry-skips"] as const,
 
   // ── Cart (Track G — «У кошик Сільпо» зі списку покупок) ────────────────
   /**

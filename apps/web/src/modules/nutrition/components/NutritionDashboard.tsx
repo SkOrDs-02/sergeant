@@ -44,6 +44,10 @@ import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
 import { useAdaptiveNutritionGoal } from "../hooks/useAdaptiveNutritionGoal";
 import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
+import {
+  SilpoPantryOffersCard,
+  type SilpoPantryOffersCardProps,
+} from "./SilpoPantryOffersCard";
 
 // ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
 // тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
@@ -56,6 +60,11 @@ interface NutritionDashboardProps {
   onGoToDailyPlan?: (() => void) | undefined;
   /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
   onPickMeal: (type: MealTypeId) => void;
+  /**
+   * Комора з `NutritionApp` для картки нових чеків Сільпо: та сама
+   * інстанція, що й у вкладці «Комора», не другий `useNutritionPantries`.
+   */
+  pantry?: SilpoPantryOffersCardProps | undefined;
 }
 
 export function NutritionDashboard({
@@ -64,6 +73,7 @@ export function NutritionDashboard({
   onGoToLog,
   onGoToDailyPlan,
   onPickMeal,
+  pantry,
 }: NutritionDashboardProps) {
   const today = useDeviceDayKey();
   const goalPeriods = useNutritionGoalPeriods();
@@ -310,6 +320,8 @@ export function NutritionDashboard({
       </Card>
 
       <AdaptiveGoalCard state={adaptiveGoal} />
+
+      {pantry && <SilpoPantryOffersCard {...pantry} />}
 
       {/* ── Insight cards (Phase 5d) — below hero, above weekly mini-bar ── */}
       {activeInsights.map((insight) => (

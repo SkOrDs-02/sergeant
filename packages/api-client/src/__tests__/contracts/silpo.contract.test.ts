@@ -448,6 +448,124 @@ describe(
   },
 );
 
+describe(
+  "contract @ POST /api/v1/silpo/receipts/{id}/pantry-release (decline whole receipt)",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("«Вже не актуальний» відхиляє чек цілим порожнім itemIds", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "user-pact-001 owns receipt rcpt-pact-0001 with unclaimed item 501",
+        )
+        .uponReceiving(
+          "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release request (decline, no items)",
+        )
+        .withRequest(
+          "POST",
+          "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
+          (req) => {
+            req.headers({
+              accept: "application/json",
+              "content-type": "application/json",
+            });
+            req.jsonBody({ itemIds: [], decline: true });
+          },
+        )
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ ok: true });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.pantryRelease("rcpt-pact-0001", {
+            itemIds: [],
+            decline: true,
+          });
+          expect(out.ok).toBe(true);
+        });
+    });
+  },
+);
+
+describe(
+  "contract @ GET /api/v1/silpo/pantry-skips",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("віддає продукти, які людина зазвичай не додає", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-001 skipped milk three times in a row")
+        .uponReceiving("a GET /api/v1/silpo/pantry-skips request")
+        .withRequest("GET", "/api/v1/silpo/pantry-skips", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ productKeys: ["молоко"] });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.pantrySkips();
+          expect(out.productKeys).toEqual(["молоко"]);
+        });
+    });
+  },
+);
+
+describe(
+  "contract @ POST /api/v1/silpo/pantry-skips",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("записує зняті й додані продукти одним запитом", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-001 has a connected Silpo account")
+        .uponReceiving("a POST /api/v1/silpo/pantry-skips request")
+        .withRequest("POST", "/api/v1/silpo/pantry-skips", (req) => {
+          req.headers({
+            accept: "application/json",
+            "content-type": "application/json",
+          });
+          req.jsonBody({ skipped: ["молоко"], added: ["хліб"] });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ ok: true });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.recordPantrySkips({
+            skipped: ["молоко"],
+            added: ["хліб"],
+          });
+          expect(out.ok).toBe(true);
+        });
+    });
+  },
+);
+
 describe("contract @ POST /api/v1/silpo/sync", CONTRACT_SUITE_OPTIONS, () => {
   let pact: PactV4;
   beforeAll(() => {

@@ -180,12 +180,22 @@ export function Transactions({
     overrideCategory,
   });
 
-  // Внески в рахунки-активи (спека finyk-savings-assets).
+  // Ноги пар «схоже на переказ»: картки активів їх не дублюють.
+  const transferTxIds = useMemo(
+    () =>
+      new Set(
+        transfers.suggestions.flatMap((p) => [p.outgoing.id, p.incoming.id]),
+      ),
+    [transfers.suggestions],
+  );
+  // Внески в рахунки-активи (спеки finyk-savings-assets і
+  // finyk-investment-suggestions).
   const assetLinks = useAssetLinks({
     storageReady,
     activeTx: filters.activeTx,
     hiddenTxIds,
     excludedTxIds,
+    transferTxIds,
     manualAssets: storage.manualAssets,
     setManualAssets: storage.setManualAssets,
     overrideCategory,

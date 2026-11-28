@@ -37,7 +37,6 @@ import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { useQueryClient } from "@tanstack/react-query";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import { useNutritionPantries } from "./hooks/useNutritionPantries";
-import { useSilpoPantryAutoImport } from "./hooks/useSilpoPantryAutoImport";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
@@ -156,15 +155,6 @@ export default function NutritionApp({
   useEffect(() => {
     pantryRef.current = pantry;
   }, [pantry, pantryRef]);
-  // Автоімпорт чеків Сільпо в комору (спека
-  // docs/work/specs/silpo-pantry-auto-import.md) - ТА САМА інстанція
-  // `pantry` вище, не окремий `useNutritionPantries` (ризик «два
-  // екземпляри стану комори», спека § Ризики).
-  useSilpoPantryAutoImport({
-    pantryItems: pantry.pantryItems,
-    upsertItemForAutoImport: pantry.upsertItemForAutoImport,
-    revertReplenish: pantry.revertReplenish,
-  });
   const log = useNutritionLog();
   const ui = useNutritionUiState();
   const shopping = useShoppingList();
@@ -602,6 +592,13 @@ export default function NutritionApp({
                     prefs={prefs}
                     setActivePageAndHash={setActivePageAndHash}
                     onPickMeal={handlePickMealSegment}
+                    // Нові чеки Сільпо пишуть у ТУ САМУ інстанцію `pantry`,
+                    // що й вкладка «Комора» (спека silpo-pantry-confirm.md).
+                    pantry={{
+                      pantryItems: pantry.pantryItems,
+                      upsertItem: pantry.upsertItem,
+                      busy,
+                    }}
                   />
                 )}
 

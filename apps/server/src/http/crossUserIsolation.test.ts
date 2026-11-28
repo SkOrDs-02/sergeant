@@ -679,6 +679,25 @@ const ISOLATION_CASES: IsolationCase[] = [
       ),
   },
   {
+    route: "GET /api/silpo/pantry-skips",
+    // Продукт Б (ключ із маркером, 3 зняття) не потрапляє в список А.
+    act: ({ app }) => asA(request(app).get("/api/silpo/pantry-skips")),
+    extra: (res) => expect(res.body).toEqual({ productKeys: [] }),
+  },
+  {
+    route: "POST /api/silpo/pantry-skips",
+    // «Додано» продукт Б від імені А: лічильник Б лишається 3. Зняття
+    // власного продукту А йде тим самим запитом, тож upsert теж проходить
+    // по справжньому Postgres.
+    act: ({ app }) =>
+      asA(
+        request(app)
+          .post("/api/silpo/pantry-skips")
+          .set(MUTATING)
+          .send({ skipped: ["iso-a-skip"], added: [`skip-${B_SECRET}`] }),
+      ),
+  },
+  {
     route: "PUT /api/silpo/settings",
     // Тумблер автоімпорту А (підключення нема) не торкається підключення Б.
     act: ({ app }) =>
@@ -950,6 +969,10 @@ const B_SNAPSHOT_QUERIES: ReadonlyArray<readonly [string, string]> = [
     `SELECT to_jsonb(t) AS r FROM silpo_tx_receipt_links t WHERE t.user_id = $1 ORDER BY to_jsonb(t)::text`,
   ],
   [
+    "silpo_pantry_skip_counts",
+    `SELECT to_jsonb(t) AS r FROM silpo_pantry_skip_counts t WHERE t.user_id = $1 ORDER BY to_jsonb(t)::text`,
+  ],
+  [
     "push_devices",
     `SELECT to_jsonb(t) AS r FROM push_devices t WHERE t.user_id = $1 ORDER BY to_jsonb(t)::text`,
   ],
@@ -1167,6 +1190,11 @@ async function seed(pool: Pool): Promise<SeedIds> {
     `INSERT INTO silpo_tx_receipt_links (user_id, transaction_id, receipt_id)
      VALUES ($1, $2, $3)`,
     [USER_B, B_SILPO_TX, B_SILPO_RECEIPT],
+  );
+  await pool.query(
+    `INSERT INTO silpo_pantry_skip_counts (user_id, product_key, consecutive_skips)
+     VALUES ($1, $2, 3)`,
+    [USER_B, `skip-${B_SECRET}`],
   );
 
   // Push

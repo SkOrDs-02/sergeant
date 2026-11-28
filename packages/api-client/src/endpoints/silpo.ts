@@ -13,6 +13,9 @@ import type {
   SilpoPantryClaimResponse as SharedSilpoPantryClaimResponse,
   SilpoPantryReleaseRequest as SharedSilpoPantryReleaseRequest,
   SilpoPantryReleaseResponse as SharedSilpoPantryReleaseResponse,
+  SilpoPantrySkipsRecordRequest as SharedSilpoPantrySkipsRecordRequest,
+  SilpoPantrySkipsRecordResponse as SharedSilpoPantrySkipsRecordResponse,
+  SilpoPantrySkipsResponse as SharedSilpoPantrySkipsResponse,
   SilpoReceiptChannel as SharedSilpoReceiptChannel,
   SilpoReceiptDetailDto as SharedSilpoReceiptDetailDto,
   SilpoReceiptItemDto as SharedSilpoReceiptItemDto,
@@ -40,6 +43,9 @@ import {
   SilpoPantryClaimResponseSchema,
   SilpoPantryReleaseRequestSchema,
   SilpoPantryReleaseResponseSchema,
+  SilpoPantrySkipsRecordRequestSchema,
+  SilpoPantrySkipsRecordResponseSchema,
+  SilpoPantrySkipsResponseSchema,
   SilpoReceiptDetailDtoSchema,
   SilpoReceiptsPageSchema,
   SilpoSettingsRequestSchema,
@@ -118,6 +124,10 @@ export type SilpoPantryClaimRequest = SharedSilpoPantryClaimRequest;
 export type SilpoPantryClaimResponse = SharedSilpoPantryClaimResponse;
 export type SilpoPantryReleaseRequest = SharedSilpoPantryReleaseRequest;
 export type SilpoPantryReleaseResponse = SharedSilpoPantryReleaseResponse;
+export type SilpoPantrySkipsResponse = SharedSilpoPantrySkipsResponse;
+export type SilpoPantrySkipsRecordRequest = SharedSilpoPantrySkipsRecordRequest;
+export type SilpoPantrySkipsRecordResponse =
+  SharedSilpoPantrySkipsRecordResponse;
 
 // ── Cart (Track G — MCP write path) ─────────────────────────────────────
 export type SilpoCartPreviewRequest = SharedSilpoCartPreviewRequest;
@@ -218,6 +228,21 @@ export interface SilpoEndpoints {
     body: SilpoPantryReleaseRequest,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<SilpoPantryReleaseResponse>;
+  /**
+   * `GET /api/silpo/pantry-skips` - продукти, які людина зазвичай не додає
+   * в комору з чека (спека `docs/work/specs/silpo-pantry-confirm.md`).
+   */
+  pantrySkips: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoPantrySkipsResponse>;
+  /**
+   * `POST /api/silpo/pantry-skips` - результат «Додати»: `skipped` +1,
+   * `added` скидає лічильник у 0.
+   */
+  recordPantrySkips: (
+    body: SilpoPantrySkipsRecordRequest,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoPantrySkipsRecordResponse>;
   /**
    * `POST /api/silpo/sync` — кнопка "Оновити чеки". `status` у відповіді —
    * стан ПІСЛЯ спроби синхронізації (можливий `reauth_required`, якщо
@@ -333,6 +358,21 @@ export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
         { signal },
       );
       return SilpoPantryReleaseResponseSchema.parse(raw);
+    },
+    pantrySkips: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/silpo/pantry-skips", {
+        signal,
+      });
+      return SilpoPantrySkipsResponseSchema.parse(raw);
+    },
+    recordPantrySkips: async (body, { signal } = {}) => {
+      const parsedBody = SilpoPantrySkipsRecordRequestSchema.parse(body);
+      const raw = await http.post<unknown>(
+        "/api/silpo/pantry-skips",
+        parsedBody,
+        { signal },
+      );
+      return SilpoPantrySkipsRecordResponseSchema.parse(raw);
     },
     sync: async ({ signal } = {}) => {
       const raw = await http.post<unknown>("/api/silpo/sync", undefined, {

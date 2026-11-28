@@ -111,13 +111,18 @@ export async function releasePantryItems(
   decline: boolean,
   queryFn: QueryFn = defaultQuery,
 ): Promise<void> {
-  await queryFn(
-    `UPDATE silpo_receipt_items
-        SET pantry_claimed_at = NULL
-      WHERE user_id = $1 AND receipt_id = $2 AND id = ANY($3::bigint[])`,
-    [userId, receiptId, itemIds],
-    { op: "silpo_pantry_release_update" },
-  );
+  // Порожній `itemIds` з `decline` - «Вже не актуальний» / «Не додавати»
+  // (спека silpo-pantry-confirm.md): чек відхиляється цілим, бронювати
+  // там нічого не встигли.
+  if (itemIds.length > 0) {
+    await queryFn(
+      `UPDATE silpo_receipt_items
+          SET pantry_claimed_at = NULL
+        WHERE user_id = $1 AND receipt_id = $2 AND id = ANY($3::bigint[])`,
+      [userId, receiptId, itemIds],
+      { op: "silpo_pantry_release_update" },
+    );
+  }
   if (decline) {
     await queryFn(
       `UPDATE silpo_receipts

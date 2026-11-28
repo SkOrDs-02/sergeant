@@ -9,7 +9,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   isApiError,
   silpoApi,
@@ -133,7 +133,7 @@ export function useSilpoReceiptForTransaction(
   };
 }
 
-// ──────────────────────── Pantry auto-import (спека silpo-pantry-auto-import.md) ────
+// ──────── Комора з чеків (спеки silpo-pantry-auto-import.md, silpo-pantry-confirm.md) ────
 
 function invalidateReceiptCaches(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -146,9 +146,9 @@ function invalidateReceiptCaches(
 }
 
 /**
- * `PUT /api/silpo/settings` - тумблер «Додавати продукти з чеків у комору
- * автоматично». Інвалідовує `syncState`: саме звідти читається
- * `pantryAutoImportSince` (Settings-картка й `useSilpoPantryAutoImport`).
+ * `PUT /api/silpo/settings` - тумблер «Пропонувати нові чеки для комори».
+ * Інвалідовує `syncState`: саме звідти читається `pantryAutoImportSince`
+ * (Settings-картка й `useSilpoPantryOffers`).
  */
 export function useSilpoUpdateSettings() {
   const queryClient = useQueryClient();
@@ -163,9 +163,8 @@ export function useSilpoUpdateSettings() {
 
 /**
  * `POST /api/silpo/receipts/:id/pantry-claim` - атомарне бронювання ПЕРЕД
- * записом у комору. Повертає лише РЕАЛЬНО заброньовані `itemIds` - виклик
- * `useSilpoPantryReplenish`/`useSilpoPantryAutoImport` пише в комору рівно
- * цю підмножину.
+ * записом у комору. Повертає лише РЕАЛЬНО заброньовані `itemIds` -
+ * `useSilpoPantryReplenish` пише в комору рівно цю підмножину.
  */
 export function usePantryClaim() {
   const queryClient = useQueryClient();
@@ -180,9 +179,9 @@ export function usePantryClaim() {
         .then((r) => r.claimedItemIds),
     onSuccess: () => invalidateReceiptCaches(queryClient),
   });
-  // Стабільна функція: автоімпорт тримає її в залежностях ефекту, і нова
-  // функція на кожен рендер перезапускала прохід по чеках безперервно
-  // (прод 2026-11-26: ~6 запитів чеків на секунду, переважно 429).
+  // Стабільна функція: нова функція на кожен рендер у залежностях ефекту
+  // колись перезапускала прохід по чеках безперервно (прод 2026-11-26: ~6
+  // запитів чеків на секунду, переважно 429).
   const { mutateAsync } = mutation;
   const claim = useCallback(
     (receiptId: string, itemIds: number[], mode: SilpoPantryClaimMode) =>
@@ -194,9 +193,9 @@ export function usePantryClaim() {
 
 /**
  * `POST /api/silpo/receipts/:id/pantry-release` - знімає бронювання.
- * `decline: true` - «Повернути» в тості автоімпорту (чек більше не
- * потрапляє в автоімпорт); `decline: false` - сервер кинув помилку між
- * `pantry-claim` і записом у комору (спека § «Позначка живе на сервері…»).
+ * `decline: true` - чек більше не пропонується для комори («Вже не
+ * актуальний», «Не додавати», або «Додати» без жодного продукту з нього);
+ * порожній `itemIds` відхиляє чек цілим.
  */
 export function usePantryRelease() {
   const queryClient = useQueryClient();
@@ -218,4 +217,40 @@ export function usePantryRelease() {
     [mutateAsync],
   );
   return { release };
+}
+
+/**
+ * `GET /api/silpo/pantry-skips` - продукти, які людина зазвичай не додає
+ * (спека silpo-pantry-confirm.md § «Навчання»). `Set` стабільний між
+ * рендерами, поки не прийшли нові дані.
+ */
+export function usePantrySkips({ enabled = true }: { enabled?: boolean } = {}) {
+  const query = useQuery({
+    queryKey: silpoKeys.pantrySkips,
+    queryFn: ({ signal }) => silpoApi.pantrySkips({ signal }),
+    enabled,
+    staleTime: STALE_TIME,
+    retry: authAwareRetry(2),
+  });
+  const productKeys = query.data?.productKeys;
+  return useMemo(() => new Set(productKeys ?? []), [productKeys]);
+}
+
+/** `POST /api/silpo/pantry-skips` - результат одного «Додати» в аркуші. */
+export function useRecordPantrySkips() {
+  const queryClient = useQueryClient();
+  const { mutateAsync } = useMutation<
+    unknown,
+    unknown,
+    { skipped: string[]; added: string[] }
+  >({
+    mutationFn: (body) => silpoApi.recordPantrySkips(body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: silpoKeys.pantrySkips });
+    },
+  });
+  return useCallback(
+    (skipped: string[], added: string[]) => mutateAsync({ skipped, added }),
+    [mutateAsync],
+  );
 }

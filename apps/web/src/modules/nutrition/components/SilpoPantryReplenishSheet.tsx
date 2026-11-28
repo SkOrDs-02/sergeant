@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-18
+ * Last validated: 2026-11-26
  * Status: Active
  *
  * «Поповнити комору з покупок Сільпо» — екран підтвердження (Silpo
@@ -13,6 +13,10 @@
  * підтвердження одним тапом пише `replenish`-події через ІСНУЮЧИЙ
  * `pantry.upsertItem` (нічого не пишеться мовчки — див.
  * `useSilpoPantryReplenish.ts`).
+ *
+ * З `offers` той самий аркуш показує нові чеки з картки в огляді (спека
+ * `docs/work/specs/silpo-pantry-confirm.md`): кожен чек секцією з датою і
+ * «Вже не актуальний», старий чек згорнутий і без галочок.
  */
 import { useId, useState } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -27,8 +31,14 @@ import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
 import { formatDateNumeric, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
+import { pluralUa } from "@sergeant/shared";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
-import { useSilpoPantryReplenish } from "../hooks/useSilpoPantryReplenish";
+import {
+  useSilpoPantryReplenish,
+  type SilpoReplenishSection,
+} from "../hooks/useSilpoPantryReplenish";
+import type { SilpoPantryOffer } from "../hooks/useSilpoPantryOffers";
 import type { SilpoReplenishRow } from "../lib/silpoReplenish";
 import type { PantryItem } from "../lib/pantryTextParser";
 
@@ -38,9 +48,17 @@ export interface SilpoPantryReplenishSheetProps {
   pantryItems: readonly Pick<PantryItem, "name">[];
   upsertItem: (items: PantryItem[]) => void;
   busy: boolean;
+  /** Режим нових чеків з картки в огляді замість вибору одного чека. */
+  offers?: readonly SilpoPantryOffer[] | undefined;
 }
 
 const COPY = messages.nutrition.pantryReplenish;
+
+function receiptDate(purchasedAt: string): string {
+  // Фінансовий запис → Kyiv-час (domain invariants): день чека не має
+  // плавати за TZ пристрою.
+  return formatDateNumeric(new Date(purchasedAt), { timeZone: KYIV_TIME_ZONE });
+}
 
 /**
  * Рядок згортання: під якою назвою позиція ляже в комору і як це скасувати.
@@ -115,12 +133,16 @@ function ReceiptItemRow({
               </span>
               <span className="min-w-0 truncate text-style-caption text-muted">
                 {/* «Вже в коморі» переважає над «Уже є»/«Нова позиція», поки
-                    взятий із чека продукт лежить у коморі (`row.locked`). */}
+                    взятий із чека продукт лежить у коморі (`row.locked`);
+                    «Зазвичай не додаєш» пояснює зняту за замовчуванням
+                    галочку. */}
                 {row.locked
                   ? COPY.alreadyInPantry
-                  : row.matchedName
-                    ? `${COPY.matchedPrefix} ${row.matchedName}`
-                    : COPY.newPosition}
+                  : row.usuallySkipped && !row.checked
+                    ? COPY.usuallySkipped
+                    : row.matchedName
+                      ? `${COPY.matchedPrefix} ${row.matchedName}`
+                      : COPY.newPosition}
               </span>
             </span>
             {qtyLabel && (
@@ -136,12 +158,107 @@ function ReceiptItemRow({
   );
 }
 
+function ReceiptRows({
+  rows,
+  labelledBy,
+  onToggle,
+  onToggleKeepFull,
+}: {
+  rows: readonly SilpoReplenishRow[];
+  labelledBy: string;
+  onToggle: (itemId: number) => void;
+  onToggleKeepFull: (itemId: number) => void;
+}) {
+  return (
+    <ul
+      role="group"
+      aria-labelledby={labelledBy}
+      className="divide-y divide-line"
+    >
+      {rows.map((row) => (
+        <ReceiptItemRow
+          key={row.item.id}
+          row={row}
+          onToggle={onToggle}
+          onToggleKeepFull={onToggleKeepFull}
+        />
+      ))}
+    </ul>
+  );
+}
+
+/** Один новий чек у режимі `offers`: шапка з датою і рядки позицій. */
+function OfferSection({
+  section,
+  onToggle,
+  onToggleKeepFull,
+  onToggleExpanded,
+  onDecline,
+}: {
+  section: SilpoReplenishSection;
+  onToggle: (itemId: number) => void;
+  onToggleKeepFull: (itemId: number) => void;
+  onToggleExpanded: (receiptId: string) => void;
+  onDecline: (receiptId: string) => void;
+}) {
+  const headingId = useId();
+  const date = section.purchasedAt ? receiptDate(section.purchasedAt) : "";
+  return (
+    <section className="min-w-0">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        {section.stale ? (
+          <button
+            type="button"
+            className="inline-flex min-h-[44px] min-w-0 items-center gap-1.5 rounded-lg text-style-body font-semibold text-text focus-ring"
+            aria-expanded={!section.collapsed}
+            onClick={() => onToggleExpanded(section.receiptId)}
+          >
+            <span id={headingId} className="min-w-0 truncate">
+              {date}
+            </span>
+            <MorphChevron open={!section.collapsed} className="text-subtle" />
+          </button>
+        ) : (
+          <SectionHeading as="h3" size="md" id={headingId}>
+            {date}
+          </SectionHeading>
+        )}
+        <Button
+          type="button"
+          variant="text"
+          className="shrink-0"
+          onClick={() => onDecline(section.receiptId)}
+        >
+          {COPY.declineReceiptCta}
+        </Button>
+      </div>
+      {section.stale && (
+        <p className="mb-2 text-style-caption text-subtle">
+          {COPY.staleReceiptHint.replace(
+            "{age}",
+            `${section.ageDays} ${pluralUa(section.ageDays, { one: "день", few: "дні", many: "днів" })}`,
+          )}
+        </p>
+      )}
+      {!section.collapsed && (
+        <ReceiptRows
+          rows={section.rows}
+          labelledBy={headingId}
+          onToggle={onToggle}
+          onToggleKeepFull={onToggleKeepFull}
+        />
+      )}
+    </section>
+  );
+}
+
 export function SilpoPantryReplenishSheet({
   open,
   onClose,
   pantryItems,
   upsertItem,
   busy,
+  offers,
 }: SilpoPantryReplenishSheetProps) {
   const toast = useToast();
   const itemsHeadingId = useId();
@@ -151,14 +268,22 @@ export function SilpoPantryReplenishSheet({
     selectedReceiptId,
     selectReceipt,
     detailLoading,
+    sections,
     rows,
     checkedCount,
     toggleItem,
     toggleKeepFull,
+    toggleExpanded,
+    declineReceipt,
     confirm,
     confirmPending,
     reset,
-  } = useSilpoPantryReplenish({ enabled: open, pantryItems, upsertItem });
+  } = useSilpoPantryReplenish({
+    enabled: open,
+    pantryItems,
+    upsertItem,
+    offers,
+  });
   // Підказка про тумблер - лише поки він вимкнений (спека § Рішення
   // дизайну, «Тумблер»). `enabled: open` - той самий гейт, що й решта
   // запитів цього аркуша, кеш спільний із `PantrySourceTabs`.
@@ -173,6 +298,17 @@ export function SilpoPantryReplenishSheet({
     reset();
   } else if (open && !prevOpen) {
     setPrevOpen(true);
+  }
+
+  async function handleDecline(receiptId: string) {
+    try {
+      await declineReceipt(receiptId);
+    } catch {
+      toast.error(failedCopy("прибрати чек"), undefined, {
+        label: "Повторити",
+        onClick: () => void handleDecline(receiptId),
+      });
+    }
   }
 
   async function handleConfirm() {
@@ -193,8 +329,8 @@ export function SilpoPantryReplenishSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={COPY.sheetTitle}
-      description={COPY.sheetDescription}
+      title={offers ? COPY.offersSheetTitle : COPY.sheetTitle}
+      description={offers ? COPY.offersSheetDescription : COPY.sheetDescription}
       panelClassName="nutrition-sheet"
       zIndex={100}
       footer={
@@ -221,96 +357,104 @@ export function SilpoPantryReplenishSheet({
         </div>
       }
     >
-      <div className="grid gap-4">
-        {syncState?.pantryAutoImportSince == null && (
-          <p className="text-style-caption text-subtle">
-            {COPY.autoImportOffHint}
-          </p>
-        )}
-        <section>
-          <SectionHeading as="h3" size="md" className="mb-2">
-            {COPY.receiptsHeading}
-          </SectionHeading>
-          {receiptsLoading ? (
-            <p className="text-style-caption text-subtle">{COPY.loading}</p>
-          ) : receipts.length === 0 ? (
-            <EmptyState compact title={COPY.receiptsEmptyTitle} />
+      {offers ? (
+        <div className="grid min-w-0 gap-5">
+          <p className="text-style-body text-subtle">{COPY.privacyReminder}</p>
+          {sections.length === 0 ? (
+            <p className="text-style-caption text-subtle">{COPY.offersEmpty}</p>
           ) : (
-            <ChoiceGroup
-              variant="rows"
-              ariaLabel={COPY.receiptsHeading}
-              className="border-y border-line"
-              value={selectedReceiptId}
-              onChange={selectReceipt}
-              items={receipts.map((r) => ({
-                value: r.receiptId,
-                label: (
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-2">
-                      {/* Фінансовий запис → Kyiv-час (domain invariants):
-                          день чека не має плавати за TZ пристрою. */}
-                      <span className="min-w-0 truncate text-style-body font-semibold">
-                        {formatDateNumeric(new Date(r.purchasedAt), {
-                          timeZone: KYIV_TIME_ZONE,
-                        })}
-                      </span>
-                      {r.pantryClaimedCount > 0 && (
-                        <span className="shrink-0 text-style-caption">
-                          {COPY.inPantryChip}
-                        </span>
-                      )}
-                    </span>
-                    <span className="shrink-0 tabular-nums text-style-body font-medium">
-                      <Money amount={r.totalKop / 100} kopecks />
-                    </span>
-                  </span>
-                ),
-              }))}
-            />
+            sections.map((section) => (
+              <OfferSection
+                key={section.receiptId}
+                section={section}
+                onToggle={toggleItem}
+                onToggleKeepFull={toggleKeepFull}
+                onToggleExpanded={toggleExpanded}
+                onDecline={(id) => void handleDecline(id)}
+              />
+            ))
           )}
-        </section>
-
-        {selectedReceiptId && (
-          <section>
-            <SectionHeading
-              as="h3"
-              size="md"
-              id={itemsHeadingId}
-              className="mb-2"
-            >
-              {COPY.itemsHeading}
-            </SectionHeading>
-            {/* Нагадування приватності перед поповненням комори — повний
-                текст обіцянки живе на картці Сільпо в Налаштуваннях
-                (`SilpoPrivacyPromise`). */}
-            <p className="text-style-body text-subtle mb-2">
-              {COPY.privacyReminder}
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {syncState?.pantryAutoImportSince == null && (
+            <p className="text-style-caption text-subtle">
+              {COPY.autoImportOffHint}
             </p>
-            {detailLoading ? (
+          )}
+          <section>
+            <SectionHeading as="h3" size="md" className="mb-2">
+              {COPY.receiptsHeading}
+            </SectionHeading>
+            {receiptsLoading ? (
               <p className="text-style-caption text-subtle">{COPY.loading}</p>
-            ) : rows.length === 0 ? (
-              <p className="text-style-caption text-subtle">
-                {COPY.itemsEmpty}
-              </p>
+            ) : receipts.length === 0 ? (
+              <EmptyState compact title={COPY.receiptsEmptyTitle} />
             ) : (
-              <ul
-                role="group"
-                aria-labelledby={itemsHeadingId}
-                className="divide-y divide-line"
-              >
-                {rows.map((row) => (
-                  <ReceiptItemRow
-                    key={row.item.id}
-                    row={row}
-                    onToggle={toggleItem}
-                    onToggleKeepFull={toggleKeepFull}
-                  />
-                ))}
-              </ul>
+              <ChoiceGroup
+                variant="rows"
+                ariaLabel={COPY.receiptsHeading}
+                className="border-y border-line"
+                value={selectedReceiptId}
+                onChange={selectReceipt}
+                items={receipts.map((r) => ({
+                  value: r.receiptId,
+                  label: (
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 truncate text-style-body font-semibold">
+                          {receiptDate(r.purchasedAt)}
+                        </span>
+                        {r.pantryClaimedCount > 0 && (
+                          <span className="shrink-0 text-style-caption">
+                            {COPY.inPantryChip}
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-style-body font-medium">
+                        <Money amount={r.totalKop / 100} kopecks />
+                      </span>
+                    </span>
+                  ),
+                }))}
+              />
             )}
           </section>
-        )}
-      </div>
+
+          {selectedReceiptId && (
+            <section>
+              <SectionHeading
+                as="h3"
+                size="md"
+                id={itemsHeadingId}
+                className="mb-2"
+              >
+                {COPY.itemsHeading}
+              </SectionHeading>
+              {/* Нагадування приватності перед поповненням комори — повний
+                текст обіцянки живе на картці Сільпо в Налаштуваннях
+                (`SilpoPrivacyPromise`). */}
+              <p className="text-style-body text-subtle mb-2">
+                {COPY.privacyReminder}
+              </p>
+              {detailLoading ? (
+                <p className="text-style-caption text-subtle">{COPY.loading}</p>
+              ) : rows.length === 0 ? (
+                <p className="text-style-caption text-subtle">
+                  {COPY.itemsEmpty}
+                </p>
+              ) : (
+                <ReceiptRows
+                  rows={rows}
+                  labelledBy={itemsHeadingId}
+                  onToggle={toggleItem}
+                  onToggleKeepFull={toggleKeepFull}
+                />
+              )}
+            </section>
+          )}
+        </div>
+      )}
     </Sheet>
   );
 }

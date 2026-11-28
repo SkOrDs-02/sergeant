@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-11-26 by docs:gen-playbook-index. **Next review:** 2027-02-24.
+> **Last validated:** 2026-11-28 by docs:gen-playbook-index. **Next review:** 2027-02-26.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->

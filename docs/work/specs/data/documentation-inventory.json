@@ -5380,6 +5380,13 @@
       "canonical_owner": "docs/work/specs/silpo-pantry-auto-import.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/silpo-pantry-confirm.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/silpo-pantry-confirm.md"
+    },
+    {
       "old_path": "docs/work/specs/site-ia/page-hroshi.md",
       "new_path": "docs/work/specs/site-ia/page-hroshi.md",
       "action": "keep",

@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-11-26 by docs:gen-status. **Next review:** 2026-12-03.
+> **Last touched:** 2026-11-28 by docs:gen-status. **Next review:** 2026-12-05.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -45,7 +45,7 @@
 - [`work/specs/tech-debt/frontend.md`](./work/specs/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Активні спеки)_
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
-- [`work/specs/finyk-investment-suggestions.md`](./work/specs/finyk-investment-suggestions.md) — SPEC: Фінік - підказки «Схоже на відкладення» для інвестицій і депозитів — Draft _(Активні спеки)_
+- [`work/specs/silpo-pantry-confirm.md`](./work/specs/silpo-pantry-confirm.md) — SPEC: Чеки Сільпо в комору з підтвердженням замість мовчазного автоімпорту — Draft - реалізація на гілці `claude/silpo-pantry-confirm-spec`, click-through (п. 3 Верифікації) ще не пройдено, див. § _(Активні спеки)_
 - [`work/specs/audits/2026-11-25-copy-visual-audit.md`](./work/specs/audits/2026-11-25-copy-visual-audit.md) — Візуальний аудит тексту після вичитки копії (PR #1724) — Draft _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 67 кластерів (90 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/reliability.md`](./work/specs/audits/2026-10-01-full-app-audit/reliability.md) — Аудит 2026-10-01 · Надійність, продуктивність, експлуатація — Active. 64 кластери (91 знахідка) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
